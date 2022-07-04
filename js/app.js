@@ -632,27 +632,21 @@
         document.addEventListener("click", (e => {
             let targetElement = e.target;
             if (targetElement.closest(".volume")) {
-                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_main.volume = 0; else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) {
-                    audio_main.volume = .3;
-                    audio_main.play();
-                }
+                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_main.pause(); else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) audio_main.play();
                 targetElement.closest(".volume").classList.toggle("_hide");
             }
         }));
     }
     if (document.querySelector(".game")) {
-        const audio_main = new Audio;
-        audio_main.preload = "auto";
-        audio_main.src = "files/audio-game.mp3";
-        audio_main.loop = [ true ];
-        audio_main.volume = .3;
+        const audio_game = new Audio;
+        audio_game.preload = "auto";
+        audio_game.src = "files/audio-game.mp3";
+        audio_game.loop = [ true ];
+        audio_game.volume = .3;
         document.addEventListener("click", (e => {
             let targetElement = e.target;
             if (targetElement.closest(".volume")) {
-                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_main.volume = 0; else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) {
-                    audio_main.volume = .3;
-                    audio_main.play();
-                }
+                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_game.pause(); else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) audio_game.play();
                 targetElement.closest(".volume").classList.toggle("_hide");
             }
         }));
