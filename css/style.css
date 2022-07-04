@@ -496,6 +496,7 @@ body._loaded {
   left: 0.9375rem;
   width: 1.875rem;
   height: 1.875rem;
+  padding: 1.25rem;
   z-index: 10;
 }
 @media (min-height: 37.5em) {
@@ -1492,6 +1493,7 @@ body._loaded {
 .content__boxer {
   position: absolute;
   bottom: -3.125rem;
+  z-index: 1;
   transition: all 0.5s ease 0s;
 }
 @media (min-height: 37.5em) {
