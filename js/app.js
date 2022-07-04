@@ -50,7 +50,7 @@
     const preloader = document.querySelector(".preloader");
     const wrapper = document.querySelector(".wrapper");
     const window_width = document.documentElement.clientWidth;
-    document.documentElement.clientHeight;
+    const window_height = document.documentElement.clientHeight;
     function deleteMoney(count, block) {
         let money = +sessionStorage.getItem("money");
         sessionStorage.setItem("money", money - count);
@@ -76,6 +76,17 @@
     }
     function getRandom(min, max) {
         return Math.floor(Math.random() * (max - min) + min);
+    }
+    function addMoney(count, block, delay, delay_off) {
+        let money = Math.floor(+sessionStorage.getItem("money") + count);
+        setTimeout((() => {
+            sessionStorage.setItem("money", money);
+            document.querySelectorAll(block).forEach((el => el.textContent = sessionStorage.getItem("money")));
+            document.querySelectorAll(block).forEach((el => el.classList.add("_anim-add-money")));
+        }), delay);
+        setTimeout((() => {
+            document.querySelectorAll(block).forEach((el => el.classList.remove("_anim-add-money")));
+        }), delay_off);
     }
     function translToPercent(all, current) {
         return 100 * current / all;
@@ -119,6 +130,29 @@
         if (+sessionStorage.getItem("glove") > 0) document.querySelectorAll(".glove-item__count").forEach((item => item.textContent = sessionStorage.getItem("glove"))); else document.querySelectorAll(".glove-item__count").forEach((item => item.textContent = "+"));
     }
     if (document.querySelector(".game") && document.querySelector(".preloader").classList.contains("_hide")) drawCurrentCountBonuses();
+    const config_game = {
+        current_win: 0,
+        state: 0
+    };
+    const config_hero = {
+        boxer: document.querySelector(".content__boxer_1"),
+        image: document.querySelector(".content__boxer_1 img"),
+        health: 2e3,
+        currentDamage: 0,
+        count: 1,
+        timerIdFight: false,
+        timerIdBack: false,
+        left: 35
+    };
+    const config_enemy = {
+        boxer: document.querySelector(".content__boxer_2"),
+        image: document.querySelector(".content__boxer_2 img"),
+        health: 2e3,
+        count: 1,
+        timerIdFight: false,
+        timerIdBack: false,
+        right: 35
+    };
     var casinoAutoSpin;
     class Slot {
         constructor(domElement, config = {}) {
@@ -149,16 +183,17 @@
                 }
                 casinoAutoSpin = setInterval((function() {
                     oThis.casinoAutoSpinCount++;
-                    if (oThis.casinoAutoSpinCount < 10 && +sessionStorage.getItem("money") >= +sessionStorage.getItem("current-bet")) oThis.spin(); else {
-                        clearInterval(casinoAutoSpin);
-                        noMoney(".check");
-                    }
-                }), 5500);
+                    if (oThis.casinoAutoSpinCount < 10 && config_enemy.health > 0 && config_hero.health > 0) oThis.spin(); else clearInterval(casinoAutoSpin);
+                }), 8e3);
             }));
             if (config.inverted) this.container.classList.add("inverted");
             this.config = config;
         }
         spin() {
+            if (0 == config_game.state) {
+                deleteMoney(+sessionStorage.getItem("current-bet"), ".check");
+                config_game.state = 1;
+            }
             this.currentSymbols = this.nextSymbols;
             this.nextSymbols = [ [ Symbol.random() ], [ Symbol.random() ], [ Symbol.random() ], [ Symbol.random() ], [ Symbol.random() ] ];
             this.onSpinStart(this.nextSymbols);
@@ -171,15 +206,13 @@
             this.spinButton.classList.add("_hold");
             this.autoSpinButton.classList.add("_hold");
             this.betButton.classList.add("_hold");
-            document.querySelector(".block-bet").classList.add("_hold");
+            if (!document.querySelector(".block-bet").classList.contains("_hold")) document.querySelector(".block-bet").classList.add("_hold");
+            if (document.querySelector(".glove-item_game").classList.contains("_active")) document.querySelector(".glove-item_game").classList.remove("_active");
+            config_hero.currentDamage = 0;
             this.config.onSpinStart?.(symbols);
             removeActiveClass(".reel");
         }
         onSpinEnd(symbols) {
-            this.spinButton.classList.remove("_hold");
-            this.autoSpinButton.classList.remove("_hold");
-            this.betButton.classList.remove("_hold");
-            document.querySelector(".block-bet").classList.remove("_hold");
             this.config.onSpinEnd?.(symbols);
         }
     }
@@ -252,14 +285,7 @@
         inverted: false,
         onSpinStart: symbols => {},
         onSpinEnd: symbols => {
-            console.log(symbols);
-            console.log(+symbols[0]);
-            console.log(+symbols[1]);
-            console.log(+symbols[2]);
-            console.log(+symbols[3]);
-            console.log(+symbols[4]);
             if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[2] && +symbols[2] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ ВСЕ ОДИНАКОВЫЕ");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
@@ -270,7 +296,6 @@
                     damageHero(3);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[2] && +symbols[2] == +symbols[3]) {
-                console.log("ВЫПАЛИ 4 ОДИНАКОВЫХ - 1, 2, 3, 4");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
@@ -280,7 +305,6 @@
                     damageHero(2);
                 }), 2500);
             } else if (+symbols[0] == +symbols[2] && +symbols[2] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 4 ОДИНАКОВЫХ - 1, 3, 4, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 3);
@@ -290,7 +314,6 @@
                     damageHero(2);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 4 ОДИНАКОВЫХ - 1, 2, 4, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 3);
@@ -300,7 +323,6 @@
                     damageHero(2);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[2] && +symbols[2] == +symbols[4]) {
-                console.log("ВЫПАЛИ 4 ОДИНАКОВЫХ - 1, 2, 3, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
@@ -310,7 +332,6 @@
                     damageHero(2);
                 }), 2500);
             } else if (+symbols[1] == +symbols[2] && +symbols[2] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 4 ОДИНАКОВЫХ - 2, 3, 4, 5");
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 3);
@@ -320,7 +341,6 @@
                     damageHero(2);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[2]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 2, 3");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
@@ -329,8 +349,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[3]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 2, 4");
-                console.log("ЭТОТ НЕ срабатывал");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 3);
@@ -339,7 +357,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[0] == +symbols[1] && +symbols[1] == +symbols[4]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 2, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 4);
@@ -348,7 +365,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[0] == +symbols[2] && +symbols[2] == +symbols[3]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 3, 4");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 3);
@@ -357,7 +373,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[0] == +symbols[2] && +symbols[2] == +symbols[4]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 3, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 4);
@@ -366,7 +381,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[0] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 1, 4, 5");
                 addActiveClass(".reel", 0);
                 addActiveClass(".reel", 3);
                 addActiveClass(".reel", 4);
@@ -375,7 +389,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[1] == +symbols[2] && +symbols[2] == +symbols[3]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 2, 3, 4");
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 3);
@@ -384,7 +397,6 @@
                     damageHero(1);
                 }), 2500);
             } else if (+symbols[1] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 2, 4, 5");
                 addActiveClass(".reel", 1);
                 addActiveClass(".reel", 3);
                 addActiveClass(".reel", 4);
@@ -392,8 +404,15 @@
                 setTimeout((() => {
                     damageHero(1);
                 }), 2500);
+            } else if (+symbols[1] == +symbols[2] && +symbols[2] == +symbols[4]) {
+                addActiveClass(".reel", 1);
+                addActiveClass(".reel", 2);
+                addActiveClass(".reel", 4);
+                heroFight();
+                setTimeout((() => {
+                    damageHero(1);
+                }), 2500);
             } else if (+symbols[2] == +symbols[3] && +symbols[3] == +symbols[4]) {
-                console.log("ВЫПАЛИ 3 ОДИНАКОВЫХ - 3, 4, 5");
                 addActiveClass(".reel", 2);
                 addActiveClass(".reel", 3);
                 addActiveClass(".reel", 4);
@@ -402,7 +421,6 @@
                     damageHero(1);
                 }), 2500);
             } else {
-                console.log("НИЧЕГО НЕ ВЫПАЛО - СОПЕРНИК НАНОСИТ УДАР");
                 enemyFight();
                 setTimeout((() => {
                     damageEnemy();
@@ -421,30 +439,18 @@
             if (item.classList.contains("_active")) item.classList.remove("_active");
         }));
     }
-    const config_hero = {
-        boxer: document.querySelector(".content__boxer_1"),
-        image: document.querySelector(".content__boxer_1 img"),
-        health: 2e3,
-        count: 1,
-        timerIdFight: false,
-        timerIdBack: false,
-        left: 35
-    };
-    const config_enemy = {
-        boxer: document.querySelector(".content__boxer_2"),
-        image: document.querySelector(".content__boxer_2 img"),
-        health: 2e3,
-        count: 1,
-        timerIdFight: false,
-        timerIdBack: false,
-        right: 35
-    };
     if (window_width > 800) {
         config_hero.left = 45;
         config_enemy.right = 45;
     }
+    if (window_height > 600) {
+        config_hero.left = 15;
+        config_enemy.right = 20;
+    }
     function heroFight() {
-        document.querySelectorAll(".bet-box__button").forEach((item => item.classList.add("_hold")));
+        document.querySelectorAll(".bet-box__button").forEach((item => {
+            if (!item.classList.contains("bet-box__button_max")) item.classList.add("_hold");
+        }));
         config_hero.timerIdFight = setInterval((() => {
             config_hero.count++;
             config_hero.boxer.style.left = `${config_hero.count}%`;
@@ -452,7 +458,6 @@
                 clearInterval(config_hero.timerIdFight);
                 config_hero.image.setAttribute("src", "img/gif/boxer-1-fight.gif");
                 heroBack();
-                document.querySelectorAll(".bet-box__button").forEach((item => item.classList.remove("_hold")));
             }
         }), 50);
     }
@@ -462,12 +467,17 @@
             config_hero.timerIdBack = setInterval((() => {
                 config_hero.count--;
                 config_hero.boxer.style.left = `${config_hero.count}%`;
-                if (config_hero.count <= 1) clearInterval(config_hero.timerIdBack);
+                if (config_hero.count <= 1) {
+                    clearInterval(config_hero.timerIdBack);
+                    checkGloveUse();
+                }
             }), 50);
         }), 1e3);
     }
     function enemyFight() {
-        document.querySelectorAll(".bet-box__button").forEach((item => item.classList.add("_hold")));
+        document.querySelectorAll(".bet-box__button").forEach((item => {
+            if (!item.classList.contains("bet-box__button_max")) item.classList.add("_hold");
+        }));
         config_enemy.timerIdFight = setInterval((() => {
             config_enemy.count++;
             config_enemy.boxer.style.right = `${config_enemy.count}%`;
@@ -475,7 +485,6 @@
                 clearInterval(config_enemy.timerIdFight);
                 config_enemy.image.setAttribute("src", "img/gif/boxer-2-fight.gif");
                 enemyBack();
-                document.querySelectorAll(".bet-box__button").forEach((item => item.classList.remove("_hold")));
             }
         }), 50);
     }
@@ -494,23 +503,36 @@
             let num = getRandom(250, 350);
             createTextDamage(".content__boxer_2", num, 2);
             config_enemy.health = config_enemy.health - num;
+            config_hero.currentDamage = num;
         } else if (2 == level) {
-            let num = getRandom(400, 500);
+            let num = getRandom(400, 800);
             createTextDamage(".content__boxer_2", num, 2);
             config_enemy.health = config_enemy.health - num;
+            config_hero.currentDamage = num;
         } else if (3 == level) {
-            let num = getRandom(650, 800);
+            let num = getRandom(800, 1200);
             createTextDamage(".content__boxer_2", num, 2);
             config_enemy.health = config_enemy.health - num;
+            config_hero.currentDamage = num;
         }
-        if (config_enemy.health <= 0) document.querySelector(".header__current-health_2").style.width = `0%`; else document.querySelector(".header__current-health_2").style.width = `${translToPercent(2e3, config_enemy.health)}%`;
+        if (config_enemy.health <= 0) {
+            document.querySelector(".header__current-health_2").style.width = `0%`;
+            setTimeout((() => {
+                document.querySelector(".content__boxer_2").classList.add("_hide");
+            }), 1e3);
+        } else document.querySelector(".header__current-health_2").style.width = `${translToPercent(2e3, config_enemy.health)}%`;
         checkGameOver();
     }
     function damageEnemy() {
-        let num = getRandom(200, 400);
+        let num = getRandom(100, 400);
         createTextDamage(".content__boxer_1", num, 1);
         config_hero.health = config_hero.health - num;
-        if (config_enemy.health <= 0) document.querySelector(".header__current-health_1").style.width = `0%`; else document.querySelector(".header__current-health_1").style.width = `${translToPercent(2e3, config_hero.health)}%`;
+        if (config_hero.health <= 0) {
+            document.querySelector(".header__current-health_1").style.width = `0%`;
+            setTimeout((() => {
+                document.querySelector(".content__boxer_1").classList.add("_hide");
+            }), 1e3);
+        } else document.querySelector(".header__current-health_1").style.width = `${translToPercent(2e3, config_hero.health)}%`;
         checkGameOver();
     }
     function createTextDamage(block, damage, num) {
@@ -529,11 +551,111 @@
         }), 2e3);
     }
     function checkGameOver() {
-        if (config_enemy.health <= 0) setTimeout((() => {
-            document.querySelector(".win").classList.add("_active");
-        }), 1e3); else if (config_hero.health <= 0) setTimeout((() => {
-            document.querySelector(".win").classList.add("_active");
-        }), 1e3);
+        if (config_enemy.health <= 0) {
+            let bet = 5;
+            if (config_hero.health > 1e3) bet = 10;
+            config_game.current_win = +sessionStorage.getItem("current-bet") * bet;
+            document.querySelector(".win__sub-text").textContent = "victory";
+            document.querySelector(".win__text").textContent = config_game.current_win;
+            addMoney(config_game.current_win, ".check", 1e3, 2e3);
+            setTimeout((() => {
+                document.querySelector(".win").classList.add("_active");
+            }), 1e3);
+        } else if (config_hero.health <= 0) {
+            document.querySelector(".win__sub-text").textContent = "defeat";
+            document.querySelector(".win").classList.add("_loose");
+            setTimeout((() => {
+                document.querySelector(".win").classList.add("_active");
+            }), 1e3);
+        } else {
+            document.querySelector(".bet-box__button_play").classList.remove("_hold");
+            document.querySelector(".bet-box__button_auto").classList.remove("_hold");
+        }
+    }
+    function resetGame() {
+        config_game.state = 0;
+        config_enemy.health = 2e3;
+        config_hero.health = 2e3;
+        config_hero.currentDamage = 0;
+        document.querySelector(".header__current-health_1").style.width = "100%";
+        document.querySelector(".header__current-health_2").style.width = "100%";
+        document.querySelector(".block-bet").classList.remove("_hold");
+        document.querySelectorAll(".bet-box__button").forEach((item => item.classList.remove("_hold")));
+        document.querySelectorAll(".content__boxer").forEach((item => {
+            if (item.classList.contains("_hide")) item.classList.remove("_hide");
+        }));
+        setTimeout((() => {
+            document.querySelector(".win").classList.remove("_active");
+        }), 100);
+        setTimeout((() => {
+            if (document.querySelector(".win").classList.contains("_loose")) document.querySelector(".win").classList.remove("_loose");
+        }), 500);
+    }
+    function useHealthBonus() {
+        sessionStorage.setItem("colb", +sessionStorage.getItem("colb") - 1);
+        document.querySelector(".colb-item__count").textContent = sessionStorage.getItem("colb");
+        document.querySelector(".header__current-health_1").classList.add("_active");
+        setTimeout((() => {
+            document.querySelector(".header__current-health_1").classList.remove("_active");
+        }), 1500);
+        config_hero.health += 1e3;
+        if (config_hero.health > 2e3) config_hero.health = 2e3;
+        document.querySelector(".header__current-health_1").style.width = `${translToPercent(2e3, config_hero.health)}%`;
+    }
+    function useGloveBonuse() {
+        sessionStorage.setItem("glove", +sessionStorage.getItem("glove") - 1);
+        document.querySelector(".glove-item__count").textContent = sessionStorage.getItem("glove");
+        heroFight();
+        setTimeout((() => {
+            createTextDamage(".content__boxer_2", config_hero.currentDamage, 2);
+            config_enemy.health = config_enemy.health - config_hero.currentDamage;
+            if (config_enemy.health <= 0) {
+                document.querySelector(".header__current-health_2").style.width = `0%`;
+                setTimeout((() => {
+                    document.querySelector(".content__boxer_2").classList.add("_hide");
+                }), 1e3);
+            } else document.querySelector(".header__current-health_2").style.width = `${translToPercent(2e3, config_enemy.health)}%`;
+            checkGameOver();
+            config_hero.currentDamage = 0;
+        }), 2e3);
+        document.querySelector(".glove-item_game").classList.remove("_active");
+    }
+    function checkGloveUse() {
+        if (config_hero.currentDamage > 0 && +sessionStorage.getItem("glove") > 0 && config_enemy.health > 0) document.querySelector(".glove-item_game").classList.add("_active");
+    }
+    if (document.querySelector(".main")) {
+        const audio_main = new Audio;
+        audio_main.preload = "auto";
+        audio_main.src = "files/audio-main.wav";
+        audio_main.loop = [ true ];
+        audio_main.volume = .3;
+        document.addEventListener("click", (e => {
+            let targetElement = e.target;
+            if (targetElement.closest(".volume")) {
+                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_main.volume = 0; else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) {
+                    audio_main.volume = .3;
+                    audio_main.play();
+                }
+                targetElement.closest(".volume").classList.toggle("_hide");
+            }
+        }));
+    }
+    if (document.querySelector(".game")) {
+        const audio_main = new Audio;
+        audio_main.preload = "auto";
+        audio_main.src = "files/audio-game.mp3";
+        audio_main.loop = [ true ];
+        audio_main.volume = .3;
+        document.addEventListener("click", (e => {
+            let targetElement = e.target;
+            if (targetElement.closest(".volume")) {
+                if (targetElement.closest(".volume") && !targetElement.closest(".volume").classList.contains("_hide")) audio_main.volume = 0; else if (targetElement.closest(".volume") && targetElement.closest(".volume").classList.contains("_hide")) {
+                    audio_main.volume = .3;
+                    audio_main.play();
+                }
+                targetElement.closest(".volume").classList.toggle("_hide");
+            }
+        }));
     }
     document.addEventListener("click", (e => {
         let targetElement = e.target;
@@ -579,6 +701,9 @@
             sessionStorage.setItem("current-bet", bet + 100);
             document.querySelector(".block-bet__coins").textContent = sessionStorage.getItem("current-bet");
         } else noMoney(".check");
+        if (targetElement.closest(".colb-item_game") && +sessionStorage.getItem("colb") > 0) useHealthBonus();
+        if (targetElement.closest(".glove-item_game") && +sessionStorage.getItem("glove") > 0) useGloveBonuse();
+        if (targetElement.closest(".win__button_play")) resetGame();
     }));
     window["FLS"] = true;
     isWebp();
